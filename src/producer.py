@@ -8,12 +8,26 @@ from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 from log_config import setup_logging
 
-# Set up the logger for producer
 setup_logging(log_level=logging.DEBUG, log_filename="producer.log")
 
 
 class Producer:
+    """
+    The Producer class is responsible for fetching and processing URLs
+    and then placing the fetched HTML content in a shared queue for consumption.
+    """
+
     def __init__(self, shared_queue, url_list, max_threads=10, max_queue_size=100, cache_size=50):
+        """
+        Initializes the Producer with a list of URLs and configurations.
+
+        Args:
+        - shared_queue (queue.Queue): A shared queue where fetched content is placed.
+        - url_list (list): List of URLs to be fetched.
+        - max_threads (int): Maximum number of threads for concurrent fetch operations.
+        - max_queue_size (int): Maximum size of the shared queue.
+        - cache_size (int): Size of the cache for fetched URLs.
+        """
         self.url_list = url_list
         self.prepare_urls()
         self.shared_queue = shared_queue
@@ -26,6 +40,15 @@ class Producer:
         self.session = self.setup_session()
 
     def sanitize_url(self, url):
+        """
+        Sanitizes and validates the scheme of the given URL.
+
+        Args:
+        - url (str): The URL to be sanitized.
+
+        Returns:
+        - str or None: Sanitized URL or None if the URL scheme is not allowed.
+        """
         parsed = urlparse(url)
         if parsed.scheme not in ['http', 'https']:
             logging.warning(f"Disallowed URL scheme in {url}")
@@ -33,6 +56,15 @@ class Producer:
         return urlunparse(parsed)
 
     def is_valid_url(self, url):
+        """
+        Checks if the given URL is valid.
+
+        Args:
+        - url (str): The URL to be checked.
+
+        Returns:
+        - bool: True if the URL is valid, otherwise False.
+        """
         parsed = urlparse(url)
         if not parsed.scheme or not parsed.netloc:
             logging.error(f"Invalid URL: {url}")
@@ -40,11 +72,20 @@ class Producer:
         return True
 
     def prepare_urls(self):
+        """
+        Sanitizes and validates the list of URLs.
+        """
         sanitized_urls = [self.sanitize_url(url) for url in self.url_list if
                           self.sanitize_url(url) and self.is_valid_url(self.sanitize_url(url))]
         self.url_list = sanitized_urls
 
     def setup_session(self):
+        """
+        Sets up and returns a requests Session with appropriate retry settings.
+
+        Returns:
+        - requests.Session: Configured session for making requests.
+        """
         session = requests.Session()
         retries = Retry(total=3, backoff_factor=0.1, status_forcelist=[500, 502, 503, 504])
         session.mount('http://', HTTPAdapter(max_retries=retries))
@@ -53,6 +94,15 @@ class Producer:
 
     @lru_cache(maxsize=None)
     def fetch_html_content(self, url):
+        """
+        Fetches and returns the HTML content of the given URL.
+
+        Args:
+        - url (str): The URL to be fetched.
+
+        Returns:
+        - str or None: Fetched HTML content or None in case of errors.
+        """
         try:
             response = self.session.get(url, timeout=10)
             if response.status_code == 200:
@@ -68,6 +118,11 @@ class Producer:
             return None
 
     def run(self):
+        """
+        Fetches the HTML content for all URLs in the list concurrently
+        and enqueues the content into the shared queue.
+        """
+
         def fetch_and_enqueue(url):
             html_content = self.fetch_html_content(url)
             with self.lock:
@@ -82,10 +137,8 @@ class Producer:
         with ThreadPoolExecutor(max_workers=self.max_threads) as executor:
             executor.map(fetch_and_enqueue, self.url_list)
 
-        # Enqueue the sentinel value to signal the Consumer that the Producer has finished its work
         self.shared_queue.put(None)
 
-        # Closing the session after all fetch operations are done
         self.session.close()
 
         logging.info(f"Total URLs processed: {len(self.url_list)}")

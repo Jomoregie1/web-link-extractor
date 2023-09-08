@@ -1,3 +1,11 @@
+"""
+Main module orchestrating the tasks between a producer and a consumer.
+
+This module sets up signal handlers, initialises the producer and consumer threads,
+and manages the shared queue between them. It also provides an indication of progress 
+to the user and gracefully shuts down upon receiving a termination signal.
+"""
+
 import logging
 import queue
 import signal
@@ -10,6 +18,7 @@ from log_config import setup_logging
 
 
 def signal_handler(_, __):
+    """Handles the termination signals (like SIGINT) to allow for graceful shutdown."""
     global shutdown_flag
     shutdown_flag = True
     logging.info("Received shutdown signal. Attempting graceful shutdown...")
@@ -23,17 +32,32 @@ shutdown_flag = False
 
 
 def progress_indicator():
+    """Indicates progress to the user until a shutdown flag is received."""
     while not shutdown_flag:
         print("Still processing...")
         time.sleep(5)
 
 
 def read_urls_from_file(filename):
+    """Reads and returns a list of URLs from the specified file.
+
+    Args:
+        filename (str): Path to the file containing URLs.
+
+    Returns:
+        list[str]: List of URLs.
+    """
     with open(filename, 'r') as f:
         return [line.strip() for line in f.readlines() if line.strip()]
 
 
 def run_producer(shared_queue, url_list):
+    """Initializes and runs the producer.
+
+    Args:
+        shared_queue (queue.Queue): Shared queue for the producer and consumer.
+        url_list (list[str]): List of URLs to be processed by the producer.
+    """
     try:
         logging.info("Producer started.")
         producer = Producer(shared_queue=shared_queue, url_list=url_list)
@@ -45,6 +69,11 @@ def run_producer(shared_queue, url_list):
 
 
 def run_consumer(shared_queue):
+    """Initializes and runs the consumer.
+
+    Args:
+        shared_queue (queue.Queue): Shared queue for the producer and consumer.
+    """
     try:
         logging.info("Consumer started.")
         consumer = Consumer(shared_queue)
@@ -56,24 +85,22 @@ def run_consumer(shared_queue):
 
 
 def main():
-
     print("""
-    
-░██╗░░░░░░░██╗███████╗██████╗░  ██╗░░░░░██╗███╗░░██╗██╗░░██╗
-░██║░░██╗░░██║██╔════╝██╔══██╗  ██║░░░░░██║████╗░██║██║░██╔╝
-░╚██╗████╗██╔╝█████╗░░██████╦╝  ██║░░░░░██║██╔██╗██║█████═╝░
-░░████╔═████║░██╔══╝░░██╔══██╗  ██║░░░░░██║██║╚████║██╔═██╗░
-░░╚██╔╝░╚██╔╝░███████╗██████╦╝  ███████╗██║██║░╚███║██║░╚██╗
-░░░╚═╝░░░╚═╝░░╚══════╝╚═════╝░  ╚══════╝╚═╝╚═╝░░╚══╝╚═╝░░╚═╝
 
-███████╗██╗░░██╗████████╗██████╗░░█████╗░░█████╗░████████╗░█████╗░██████╗░
-██╔════╝╚██╗██╔╝╚══██╔══╝██╔══██╗██╔══██╗██╔══██╗╚══██╔══╝██╔══██╗██╔══██╗
-█████╗░░░╚███╔╝░░░░██║░░░██████╔╝███████║██║░░╚═╝░░░██║░░░██║░░██║██████╔╝
-██╔══╝░░░██╔██╗░░░░██║░░░██╔══██╗██╔══██║██║░░██╗░░░██║░░░██║░░██║██╔══██╗
-███████╗██╔╝╚██╗░░░██║░░░██║░░██║██║░░██║╚█████╔╝░░░██║░░░╚█████╔╝██║░░██║
-╚══════╝╚═╝░░╚═╝░░░╚═╝░░░╚═╝░░╚═╝╚═╝░░╚═╝░╚════╝░░░░╚═╝░░░░╚════╝░╚═╝░░╚═╝
-    """)
+    ░██╗░░░░░░░██╗███████╗██████╗░  ██╗░░░░░██╗███╗░░██╗██╗░░██╗
+    ░██║░░██╗░░██║██╔════╝██╔══██╗  ██║░░░░░██║████╗░██║██║░██╔╝
+    ░╚██╗████╗██╔╝█████╗░░██████╦╝  ██║░░░░░██║██╔██╗██║█████═╝░
+    ░░████╔═████║░██╔══╝░░██╔══██╗  ██║░░░░░██║██║╚████║██╔═██╗░
+    ░░╚██╔╝░╚██╔╝░███████╗██████╦╝  ███████╗██║██║░╚███║██║░╚██╗
+    ░░░╚═╝░░░╚═╝░░╚══════╝╚═════╝░  ╚══════╝╚═╝╚═╝░░╚══╝╚═╝░░╚═╝
 
+    ███████╗██╗░░██╗████████╗██████╗░░█████╗░░█████╗░████████╗░█████╗░██████╗░
+    ██╔════╝╚██╗██╔╝╚══██╔══╝██╔══██╗██╔══██╗██╔══██╗╚══██╔══╝██╔══██╗██╔══██╗
+    █████╗░░░╚███╔╝░░░░██║░░░██████╔╝███████║██║░░╚═╝░░░██║░░░██║░░██║██████╔╝
+    ██╔══╝░░░██╔██╗░░░░██║░░░██╔══██╗██╔══██║██║░░██╗░░░██║░░░██║░░██║██╔══██╗
+    ███████╗██╔╝╚██╗░░░██║░░░██║░░██║██║░░██║╚█████╔╝░░░██║░░░╚█████╔╝██║░░██║
+    ╚══════╝╚═╝░░╚═╝░░░╚═╝░░░╚═╝░░╚═╝╚═╝░░╚═╝░╚════╝░░░░╚═╝░░░░╚════╝░╚═╝░░╚═╝
+        """)
     setup_logging(log_level=logging.INFO, log_filename="main.log")
 
     filepath = input("Enter the path to your file containing URLs: ")
@@ -92,7 +119,6 @@ def main():
 
     shared_queue = queue.Queue(maxsize=1000)
 
-    # Start the progress indicator thread
     progress_thread = threading.Thread(target=progress_indicator, name="ProgressIndicator")
     progress_thread.start()
 
