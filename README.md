@@ -20,7 +20,7 @@ A test file named `urls.txt` is provided in the `/data/` directory. You can use 
    ```bash
    docker pull jomoregie1/web-extractor:v1
 
-2. **Running the web-extractor Container**
+2. **Running the web-extractor Container:**
    ```bash
    docker run -it --rm jomoregie1/web-extractor:v1
    
