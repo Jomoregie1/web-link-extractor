@@ -1,4 +1,3 @@
-import queue
 from urllib.parse import urlparse, urlunparse
 import requests
 import threading
@@ -14,10 +13,10 @@ setup_logging(log_level=logging.DEBUG, log_filename="producer.log")
 
 
 class Producer:
-    def __init__(self, url_list, max_threads=10, max_queue_size=100, cache_size=50):
+    def __init__(self, shared_queue, url_list, max_threads=10, max_queue_size=100, cache_size=50):
         self.url_list = url_list
         self.prepare_urls()
-        self.shared_queue = queue.Queue()
+        self.shared_queue = shared_queue
         self.successful_fetches = 0
         self.errors = 0
         self.lock = threading.Lock()
