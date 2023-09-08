@@ -41,7 +41,7 @@ If you don't have Docker installed or prefer running the application directly, f
 1. **Clone the GitHub repository to your machine:**
    ```bash
    git clone [https://github.com/Jomoregie1/web-link-extractor.git]
-   cd [web-link-extractor]
+   cd web-link-extractor
 2. **(Optional but recommended) Set up a virtual environment:**
    ```bash
    python -m venv venv
@@ -61,7 +61,7 @@ If you don't have Docker installed or prefer running the application directly, f
 
 1. **Navigate to the project directory:**
    ```bash
-   cd [web-link-extractor]
+   cd web-link-extractor
 2. **Run the tests using the unittest module:**
    ```bash
    python -m unittest discover tests
@@ -113,7 +113,7 @@ Detailed error messages are logged, but they are not propagated up. This ensures
 - **test_sanitize_url_valid_scheme**: Checks if the producer correctly sanitizes URLs with valid schemes.
 - **test_sanitize_url_invalid_scheme**: Asserts the correct behavior for URLs with invalid schemes.
 - **test_is_valid_url**: Tests various URL formats for validity.
-- **test_prepare_urls**: Validates the initialization process where invalid URLs are filtered out.
+- **test_prepare_urls**: Validates the initialisation process where invalid URLs are filtered out.
 - **test_fetch_html_content_success**: Simulates a successful fetch operation for HTML content.
 - **test_fetch_html_content_failure** & **test_fetch_html_content_exception**: Assures correct behavior during failed fetch operations.
 - **test_run**: Confirms that the producer correctly pushes URLs and HTML content to the shared queue.
