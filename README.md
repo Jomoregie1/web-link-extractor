@@ -40,7 +40,7 @@ If you don't have Docker installed or prefer running the application directly, f
 
 1. **Clone the GitHub repository to your machine:**
    ```bash
-   git clone [https://github.com/Jomoregie1/web-link-extractor.git]
+   git clone https://github.com/Jomoregie1/web-link-extractor.git
    cd web-link-extractor
 2. **(Optional but recommended) Set up a virtual environment:**
    ```bash
