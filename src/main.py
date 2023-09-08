@@ -6,7 +6,7 @@ import time
 
 from consumer import Consumer
 from producer import Producer
-from src.log_config import setup_logging
+from log_config import setup_logging
 
 
 def signal_handler(_, __):
@@ -18,7 +18,7 @@ def signal_handler(_, __):
 # Register the signal handler
 signal.signal(signal.SIGINT, signal_handler)
 signal.signal(signal.SIGTERM, signal_handler)
-# Shutdown flag
+
 shutdown_flag = False
 
 
@@ -37,7 +37,7 @@ def run_producer(shared_queue, url_list):
     try:
         logging.info("Producer started.")
         producer = Producer(shared_queue=shared_queue, url_list=url_list)
-        if not shutdown_flag:  # Check flag before running
+        if not shutdown_flag:
             producer.run()
         logging.info("Producer finished.")
     except Exception as e:
@@ -48,7 +48,7 @@ def run_consumer(shared_queue):
     try:
         logging.info("Consumer started.")
         consumer = Consumer(shared_queue)
-        if not shutdown_flag:  # Check flag before running
+        if not shutdown_flag:
             consumer.run()
         logging.info("Consumer finished.")
     except Exception as e:

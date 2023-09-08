@@ -38,7 +38,7 @@ class TestProducer(unittest.TestCase):
         producer = Producer(self.mock_shared_queue, ['https://www.valid.com', 'javascript:alert(1)', 'www.invalid.com'])
         self.assertEqual(producer.url_list, ['https://www.valid.com'])
 
-    @patch('requests.Session.get')  # Patching get method of the requests.Session
+    @patch('requests.Session.get')
     def test_fetch_html_content_success(self, mock_get):
         mock_response = Mock()
         mock_response.status_code = 200
@@ -74,13 +74,10 @@ class TestProducer(unittest.TestCase):
         mock_response.text = '<html></html>'
         mock_get.return_value = mock_response
 
-        # Instantiate the producer with the mock shared queue and the given URL
         producer = Producer(self.mock_shared_queue, ['https://www.example.com'])
 
-        # Run the producer
         producer.run()
 
-        # Check if the fetched content was added to the queue
         self.assertTrue((producer.url_list[0], mock_response.text) in list(self.mock_shared_queue.queue))
 
 

@@ -6,7 +6,7 @@ from concurrent.futures import ThreadPoolExecutor
 from functools import lru_cache
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
-from src.log_config import setup_logging
+from log_config import setup_logging
 
 # Set up the logger for producer
 setup_logging(log_level=logging.DEBUG, log_filename="producer.log")
