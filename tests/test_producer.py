@@ -25,7 +25,7 @@ class TestProducer(unittest.TestCase):
         producer = Producer(['https://www.valid.com', 'javascript:alert(1)', 'www.invalid.com'])
         self.assertEqual(producer.url_list, ['https://www.valid.com'])
 
-    @patch('src.producer.requests.get')
+    @patch('requests.Session.get')  # Patching get method of the requests.Session
     def test_fetch_html_content_success(self, mock_get):
         mock_response = Mock()
         mock_response.status_code = 200
@@ -36,7 +36,7 @@ class TestProducer(unittest.TestCase):
         content = producer.fetch_html_content('https://www.example.com')
         self.assertEqual(content, '<html></html>')
 
-    @patch('src.producer.requests.get')
+    @patch('requests.Session.get')
     def test_fetch_html_content_failure(self, mock_get):
         mock_response = Mock()
         mock_response.status_code = 404
@@ -46,7 +46,7 @@ class TestProducer(unittest.TestCase):
         content = producer.fetch_html_content('https://www.example.com')
         self.assertIsNone(content)
 
-    @patch('src.producer.requests.get')
+    @patch('requests.Session.get')
     def test_fetch_html_content_exception(self, mock_get):
         mock_get.side_effect = Exception("Fake exception")
 
@@ -54,7 +54,7 @@ class TestProducer(unittest.TestCase):
         content = producer.fetch_html_content('https://www.example.com')
         self.assertIsNone(content)
 
-    @patch('src.producer.requests.get')
+    @patch('requests.Session.get')
     def test_run(self, mock_get):
         mock_response = Mock()
         mock_response.status_code = 200

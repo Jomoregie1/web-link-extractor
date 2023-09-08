@@ -5,16 +5,12 @@ import threading
 import logging
 from concurrent.futures import ThreadPoolExecutor
 from functools import lru_cache
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
+from src.log_config import setup_logging
 
-# logging configurations
-logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(asctime)s [%(levelname)s]: %(message)s',
-    handlers=[
-        logging.FileHandler("producer.log"),
-        logging.StreamHandler()
-    ]
-)
+# Set up the logger for producer
+setup_logging(log_level=logging.DEBUG, log_filename="producer.log")
 
 
 class Producer:
@@ -28,41 +24,38 @@ class Producer:
         self.max_threads = max_threads
         self.max_queue_size = max_queue_size
         self.cache_size = cache_size
+        self.session = self.setup_session()
 
     def sanitize_url(self, url):
         parsed = urlparse(url)
-
         if parsed.scheme not in ['http', 'https']:
             logging.warning(f"Disallowed URL scheme in {url}")
             return None
-
-        sanitized_url = urlunparse(parsed)
-        return sanitized_url
+        return urlunparse(parsed)
 
     def is_valid_url(self, url):
         parsed = urlparse(url)
-
         if not parsed.scheme or not parsed.netloc:
             logging.error(f"Invalid URL: {url}")
             return False
-
         return True
 
     def prepare_urls(self):
-        sanitized_urls = []
-        for url in self.url_list:
-            sanitized_url = self.sanitize_url(url)
-            if sanitized_url and self.is_valid_url(sanitized_url):
-                sanitized_urls.append(sanitized_url)
-            else:
-                logging.error(f"Removing invalid or potentially harmful URL: {url}")
-
+        sanitized_urls = [self.sanitize_url(url) for url in self.url_list if
+                          self.sanitize_url(url) and self.is_valid_url(self.sanitize_url(url))]
         self.url_list = sanitized_urls
+
+    def setup_session(self):
+        session = requests.Session()
+        retries = Retry(total=3, backoff_factor=0.1, status_forcelist=[500, 502, 503, 504])
+        session.mount('http://', HTTPAdapter(max_retries=retries))
+        session.mount('https://', HTTPAdapter(max_retries=retries))
+        return session
 
     @lru_cache(maxsize=None)
     def fetch_html_content(self, url):
         try:
-            response = requests.get(url)
+            response = self.session.get(url, timeout=10)
             if response.status_code == 200:
                 return response.text
             else:
@@ -82,7 +75,7 @@ class Producer:
                 if html_content:
                     while self.shared_queue.qsize() >= self.max_queue_size:
                         self.shared_queue.get()
-                    self.shared_queue.put(html_content)
+                    self.shared_queue.put((url, html_content))
                     self.successful_fetches += 1
                 else:
                     self.errors += 1
@@ -90,7 +83,12 @@ class Producer:
         with ThreadPoolExecutor(max_workers=self.max_threads) as executor:
             executor.map(fetch_and_enqueue, self.url_list)
 
+        # Enqueue the sentinel value to signal the Consumer that the Producer has finished its work
+        self.shared_queue.put(None)
+
+        # Closing the session after all fetch operations are done
+        self.session.close()
+
         logging.info(f"Total URLs processed: {len(self.url_list)}")
         logging.info(f"Successful fetches: {self.successful_fetches}")
         logging.info(f"Errors encountered: {self.errors}")
-
